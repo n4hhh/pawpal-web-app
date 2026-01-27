@@ -69,6 +69,10 @@ const SignUp = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double submit
+    if (loading) return;
+    
     setError('');
 
     if (!validateForm()) {

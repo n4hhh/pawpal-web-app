@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { User } from '@supabase/supabase-js';
 
 export interface AuthUser {
   id: string;
@@ -20,18 +21,29 @@ export const signUpWithEmail = async (email: string, password: string, userData:
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: {
+  });
+
+  if (error) throw error;
+
+  // Save user profile to profiles table
+  if (data.user) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: data.user.id,
+        email,
         full_name: userData.fullName,
         phone_number: userData.phoneNumber,
         age: userData.age,
         bio: userData.bio,
         favorite_breed: userData.favoriteBreed,
-      },
-    },
-  });
+      }, {
+        onConflict: 'id'
+      });
 
-  if (error) throw error;
+    if (profileError) throw profileError;
+  }
+
   return data;
 };
 
@@ -57,6 +69,24 @@ export const signInWithGoogle = async () => {
 
   if (error) throw error;
   return data;
+};
+
+// Create or update profile for OAuth users
+export const createOrUpdateProfile = async (user: User) => {
+  if (!user) return;
+
+  const { error } = await supabase
+    .from('profiles')
+    .upsert({
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+      avatar_url: user.user_metadata?.avatar_url,
+    }, {
+      onConflict: 'id'
+    });
+
+  if (error) throw error;
 };
 
 // Sign out

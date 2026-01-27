@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { createOrUpdateProfile } from '@/lib/auth';
 import { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -30,10 +31,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+          
+          // Create or update profile only for Google OAuth users
+          if (session.user.app_metadata?.provider === 'google') {
+            try {
+              await createOrUpdateProfile(session.user);
+            } catch (err) {
+              console.error('Failed to create profile:', err);
+            }
+          }
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
 
     return () => subscription?.unsubscribe();
   }, []);
