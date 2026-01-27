@@ -5,28 +5,28 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface FeedPostProps {
-  petName: string;
-  ownerName: string;
-  avatar: string;
-  image: string;
-  caption: string;
-  likes: number;
-  comments: number;
-  timeAgo: string;
+  petName?: string | null;
+  ownerName?: string | null;
+  avatar?: string | null;
+  image?: string | string[] | null;
+  caption?: string | null;
+  likes?: number | null;
+  comments?: number | null;
+  timeAgo?: string | null;
 }
 
 export function FeedPost({
-  petName,
-  ownerName,
-  avatar,
-  image,
-  caption,
-  likes,
-  comments,
-  timeAgo,
+  petName = 'Pet',
+  ownerName = 'owner',
+  avatar = '',
+  image = '',
+  caption = '',
+  likes = 0,
+  comments = 0,
+  timeAgo = '',
 }: FeedPostProps) {
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(likes);
+  const [likeCount, setLikeCount] = useState(likes ?? 0);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -40,9 +40,9 @@ export function FeedPost({
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10 ring-2 ring-primary/20">
             <AvatarImage src={avatar} alt={petName} />
-            <AvatarFallback className="bg-coral-light text-primary font-bold">
-              {petName[0]}
-            </AvatarFallback>
+              <AvatarFallback className="bg-coral-light text-primary font-bold">
+                {(petName && petName[0]) || (ownerName && ownerName[0]) || 'P'}
+              </AvatarFallback>
           </Avatar>
           <div>
             <h4 className="font-bold text-foreground">{petName}</h4>
@@ -56,8 +56,9 @@ export function FeedPost({
 
       {/* Image */}
       <div className="relative aspect-square">
+        {/* support image as string or array; provide fallback placeholder */}
         <img
-          src={image}
+          src={Array.isArray(image) ? image[0] ?? '' : image ?? ''}
           alt={`Post by ${petName}`}
           className="w-full h-full object-cover"
         />
@@ -89,18 +90,18 @@ export function FeedPost({
         </div>
 
         {/* Likes count */}
-        <p className="font-bold text-sm mb-2">{likeCount.toLocaleString()} likes</p>
+        <p className="font-bold text-sm mb-2">{(likeCount ?? 0).toLocaleString()} likes</p>
 
         {/* Caption */}
         <p className="text-sm">
           <span className="font-bold">{petName}</span>{" "}
-          <span className="text-foreground/80">{caption}</span>
+          <span className="text-foreground/80">{caption ?? ''}</span>
         </p>
 
         {/* Comments and time */}
         <div className="mt-2 space-y-1">
           <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            View all {comments} comments
+            View all {(comments ?? 0)} comments
           </button>
           <p className="text-xs text-muted-foreground">{timeAgo}</p>
         </div>
