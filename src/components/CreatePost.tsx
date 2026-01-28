@@ -16,8 +16,16 @@ import { supabase } from "@/lib/supabase";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-export function CreatePost() {
-  const [open, setOpen] = useState(false);
+interface CreatePostProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function CreatePost({ open: controlledOpen, onOpenChange }: CreatePostProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
+  
   const [caption, setCaption] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -171,15 +179,6 @@ export function CreatePost() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          size="lg" 
-          className="rounded-full shadow-lg hover:shadow-xl transition-all"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Create Post
-        </Button>
-      </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Create a New Post</DialogTitle>
@@ -229,6 +228,7 @@ export function CreatePost() {
                   accept="image/*"
                   className="hidden"
                   onChange={handleFileSelect}
+                  aria-label="Upload image file"
                 />
                 
                 <div className="relative">

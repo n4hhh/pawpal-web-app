@@ -6,9 +6,9 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       <Navbar />
-      <main>{children}</main>
+      <main className="flex-1">{children}</main>
     </div>
   );
 }

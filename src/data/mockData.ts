@@ -70,6 +70,7 @@ export const mockPets: Pet[] = [
 
 export const feedPosts = [
   {
+    id: "mock-1",
     petName: "Max",
     ownerName: "sarah_pawsome",
     avatar: pet1,
@@ -80,6 +81,7 @@ export const feedPosts = [
     timeAgo: "2 hours ago",
   },
   {
+    id: "mock-2",
     petName: "Whiskers",
     ownerName: "cat_dad_mike",
     avatar: pet2,
@@ -90,6 +92,7 @@ export const feedPosts = [
     timeAgo: "5 hours ago",
   },
   {
+    id: "mock-3",
     petName: "Bruno",
     ownerName: "frenchie_lover",
     avatar: pet3,

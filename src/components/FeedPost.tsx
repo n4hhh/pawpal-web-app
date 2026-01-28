@@ -3,8 +3,12 @@ import { useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
+import { CommentsDialog } from "./CommentsDialog";
 
 interface FeedPostProps {
+  id?: string;
   petName?: string | null;
   ownerName?: string | null;
   avatar?: string | null;
@@ -16,6 +20,7 @@ interface FeedPostProps {
 }
 
 export function FeedPost({
+  id,
   petName = 'Pet',
   ownerName = 'owner',
   avatar = '',
@@ -27,9 +32,46 @@ export function FeedPost({
 }: FeedPostProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(likes || 0);
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
+  const [isLiking, setIsLiking] = useState(false);
+  const [commentCount, setCommentCount] = useState(comments || 0);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleLike = async () => {
+    if (!id || isLiking) return;
+    
+    setIsLiking(true);
+    const newIsLiked = !isLiked;
+    const newCount = newIsLiked ? likeCount + 1 : likeCount - 1;
+    
+    // Optimistic update
+    setIsLiked(newIsLiked);
+    setLikeCount(newCount);
+
+    try {
+      // Update the likes count in the database
+      const { error } = await supabase
+        .from('feed_posts')
+        .update({ likes: newCount })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Refresh the feed to get updated data
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+    } catch (error) {
+      console.error("Error updating like:", error);
+      // Revert on error
+      setIsLiked(!newIsLiked);
+      setLikeCount(newIsLiked ? newCount - 1 : newCount + 1);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const handleCommentAdded = () => {
+    setCommentCount(commentCount + 1);
+    queryClient.invalidateQueries({ queryKey: ["feed"] });
   };
 
   // Guard against missing data
@@ -43,7 +85,7 @@ export function FeedPost({
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10 ring-2 ring-primary/20">
-            <AvatarImage src={avatar} alt={petName} />
+            <AvatarImage src={avatar ?? undefined} alt={petName ?? undefined} />
               <AvatarFallback className="bg-coral-light text-primary font-bold">
                 {(petName && petName[0]) || (ownerName && ownerName[0]) || 'P'}
               </AvatarFallback>
@@ -85,7 +127,12 @@ export function FeedPost({
               fill={isLiked ? "currentColor" : "none"}
             />
           </Button>
-          <Button variant="ghost" size="icon" className="hover:scale-110 transition-all">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="hover:scale-110 transition-all"
+            onClick={() => setCommentsOpen(true)}
+          >
             <MessageCircle className="w-6 h-6" />
           </Button>
           <Button variant="ghost" size="icon" className="hover:scale-110 transition-all">
@@ -104,12 +151,33 @@ export function FeedPost({
 
         {/* Comments and time */}
         <div className="mt-2 space-y-1">
-          <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            View all {(comments ?? 0)} comments
+          <button 
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setCommentsOpen(true)}
+          >
+            View all {commentCount} comments
           </button>
           <p className="text-xs text-muted-foreground">{timeAgo}</p>
         </div>
       </div>
+
+      {/* Comments Dialog */}
+      {id && (
+        <CommentsDialog
+          open={commentsOpen}
+          onOpenChange={setCommentsOpen}
+          postId={id}
+          commentCount={commentCount}
+          onCommentAdded={handleCommentAdded}
+          postImage={Array.isArray(image) ? image[0] : image ?? undefined}
+          postCaption={caption ?? undefined}
+          postLikes={likeCount}
+          petName={petName ?? undefined}
+          ownerName={ownerName ?? undefined}
+          avatar={avatar ?? undefined}
+          timeAgo={timeAgo ?? undefined}
+        />
+      )}
     </article>
   );
 }

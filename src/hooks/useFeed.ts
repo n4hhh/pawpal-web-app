@@ -5,6 +5,7 @@ import { feedPosts as mockFeed } from '@/data/mockData';
 type FeedPost = (typeof mockFeed)[number];
 
 interface FeedPostDB {
+  id: string;
   pet_name: string;
   owner_name: string;
   avatar: string;
@@ -13,11 +14,29 @@ interface FeedPostDB {
   likes: number;
   comments: number;
   time_ago: string;
+  created_at: string;
+}
+
+// Format timestamp to relative time
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 5) return "Just now";
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`;
+  if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w`;
+  if (seconds < 31536000) return `${Math.floor(seconds / 2592000)}mo`;
+  return `${Math.floor(seconds / 31536000)}y`;
 }
 
 // Transform DB snake_case to component camelCase
-function transformFeedPost(dbPost: FeedPostDB): FeedPost {
+function transformFeedPost(dbPost: FeedPostDB): FeedPost & { id: string } {
   return {
+    id: dbPost.id,
     petName: dbPost.pet_name,
     ownerName: dbPost.owner_name,
     avatar: dbPost.avatar,
@@ -25,7 +44,7 @@ function transformFeedPost(dbPost: FeedPostDB): FeedPost {
     caption: dbPost.caption,
     likes: dbPost.likes,
     comments: dbPost.comments,
-    timeAgo: dbPost.time_ago,
+    timeAgo: formatTimeAgo(dbPost.created_at),
   };
 }
 

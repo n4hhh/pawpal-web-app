@@ -1,6 +1,5 @@
 import { Layout } from "@/components/Layout";
 import { FeedPost } from "@/components/FeedPost";
-import { CreatePost } from "@/components/CreatePost";
 import { feedPosts, mockPets } from "@/data/mockData";
 import { useFeed } from "@/hooks/useFeed";
 import { usePets } from "@/hooks/usePets";
@@ -19,10 +18,6 @@ const Index = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 lg:px-8 py-8">
-        {/* Create Post Button */}
-        <div className="mb-6 flex justify-center lg:justify-start">
-          <CreatePost />
-        </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Feed */}
@@ -69,7 +64,7 @@ const Index = () => {
               </Card>
             ) : (displayFeed ?? []).length > 0 ? (
               displayFeed.map((post, index) => (
-                <FeedPost key={index} {...post} />
+                <FeedPost key={post.id || index} {...post} />
               ))
             ) : (
               <Card className="p-8 text-center">
@@ -81,6 +76,7 @@ const Index = () => {
 
           {/* Sidebar */}
           <aside className="hidden lg:block space-y-6">
+            <div className="sticky top-8 space-y-6">
             {/* Trending Pets */}
             <Card className="p-5">
               <div className="flex items-center gap-2 mb-4">
@@ -142,6 +138,7 @@ const Index = () => {
                 Start Matching
               </Button>
             </Card>
+            </div>
           </aside>
         </div>
       </div>
