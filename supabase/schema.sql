@@ -95,27 +95,29 @@ insert into public.users (email, username, display_name, avatar, bio)
 values
 ('sarah@example.com','sarah_pawsome','Sarah','https://picsum.photos/64','Dog lover and photographer'),
 ('mike@example.com','cat_dad_mike','Mike','https://picsum.photos/64','Cat dad and baker')
+on conflict (email) do nothing;
+
+-- Insert sample pets without owners (owner_id is nullable)
+insert into public.pets (name, age, breed, location, image, bio)
+values
+('Max','2 yrs','Golden Retriever','2 miles away','https://picsum.photos/400','I love long walks and belly rubs!'),
+('Whiskers','1 yr','Orange Tabby','5 miles away','https://picsum.photos/401','Professional napper and treat connoisseur.'),
+('Bruno','8 mo','French Bulldog','1 mile away','https://picsum.photos/402','Snort expert and zoomies champion!')
 on conflict do nothing;
 
--- If pets table empty, insert sample pets (referencing seeded users if present)
-insert into public.pets (owner_id, name, age, breed, location, image, bio)
-select u.id, v.name, v.age, v.breed, v.location, v.image, v.bio
-from (
-  values
-  ('Max','2 yrs','Golden Retriever','2 miles away','https://picsum.photos/400','I love long walks and belly rubs!'),
-  ('Whiskers','1 yr','Orange Tabby','5 miles away','https://picsum.photos/401','Professional napper and treat connoisseur.'),
-  ('Bruno','8 mo','French Bulldog','1 mile away','https://picsum.photos/402','Snort expert and zoomies champion!')
-) as v(name, age, breed, location, image, bio)
-cross join lateral (select id from public.users order by created_at limit 1) as u
-on conflict do nothing;
+-- Enable RLS if not already enabled
+alter table public.feed_posts enable row level security;
 
--- Example RLS policy to allow anonymous SELECT on read-only tables (dev only)
--- Enable RLS and create permissive policy for feed and pets for quick dev checks
--- Uncomment and run if you want to enable RLS and permit anon select
--- alter table public.feed_posts enable row level security;
--- create policy "Allow select for anon" on public.feed_posts for select using (true);
--- alter table public.pets enable row level security;
--- create policy "Allow select for anon pets" on public.pets for select using (true);
+-- Create policies only if they don't exist (will error if they exist, but that's ok)
+do $$ 
+begin
+  if not exists (select 1 from pg_policies where tablename = 'feed_posts' and policyname = 'Allow anon insert on feed_posts') then
+    create policy "Allow anon insert on feed_posts" on public.feed_posts for insert to anon with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'feed_posts' and policyname = 'Allow select for anon') then
+    create policy "Allow select for anon" on public.feed_posts for select using (true);
+  end if;
+end $$;
 
 -- Notes:
 -- - For production, create strict RLS policies and use Supabase Auth. Use service role for server-side operations.

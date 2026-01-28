@@ -1,5 +1,6 @@
 import { Layout } from "@/components/Layout";
 import { FeedPost } from "@/components/FeedPost";
+import { CreatePost } from "@/components/CreatePost";
 import { feedPosts, mockPets } from "@/data/mockData";
 import { useFeed } from "@/hooks/useFeed";
 import { usePets } from "@/hooks/usePets";
@@ -10,7 +11,7 @@ import { TrendingUp, Users, Sparkles } from "lucide-react";
 
 const Index = () => {
   const { data: pets } = usePets();
-  const { data: feed } = useFeed();
+  const { data: feed, isLoading } = useFeed();
 
   // Use feed data if available, fallback to mock
   const displayFeed = feed ?? feedPosts;
@@ -18,6 +19,11 @@ const Index = () => {
   return (
     <Layout>
       <div className="container mx-auto px-4 lg:px-8 py-8">
+        {/* Create Post Button */}
+        <div className="mb-6 flex justify-center lg:justify-start">
+          <CreatePost />
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Feed */}
           <div className="lg:col-span-2 space-y-6">
@@ -56,14 +62,21 @@ const Index = () => {
               </div>
             </Card>
 
-              {/* Feed Posts */}
-              {(displayFeed ?? []).length > 0 ? (
-                displayFeed.map((post, index) => (
-                  <FeedPost key={index} {...post} />
-                ))
-              ) : (
-                <p className="text-center text-muted-foreground">No feed posts available</p>
-              )}
+            {/* Feed Posts */}
+            {isLoading ? (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">Loading feed...</p>
+              </Card>
+            ) : (displayFeed ?? []).length > 0 ? (
+              displayFeed.map((post, index) => (
+                <FeedPost key={index} {...post} />
+              ))
+            ) : (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground mb-4">No posts yet</p>
+                <p className="text-sm text-muted-foreground">Be the first to share a moment!</p>
+              </Card>
+            )}
           </div>
 
           {/* Sidebar */}
