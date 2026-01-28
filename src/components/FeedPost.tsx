@@ -26,12 +26,16 @@ export function FeedPost({
   timeAgo = '',
 }: FeedPostProps) {
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(likes ?? 0);
-
+  const [likeCount, setLikeCount] = useState(likes || 0);
   const handleLike = () => {
     setIsLiked(!isLiked);
     setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
   };
+
+  // Guard against missing data
+  if (!petName || !image) {
+    return null;
+  }
 
   return (
     <article className="bg-card rounded-2xl overflow-hidden shadow-soft border border-border">

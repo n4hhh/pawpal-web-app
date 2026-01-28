@@ -153,27 +153,33 @@ create index if not exists idx_swipes on public.swipes(swiper_id, pet_id);
 -- SAMPLE SEED (minimal, optional)
 insert into public.profiles (id, email, username, display_name, avatar, bio)
 values
--- If you want to seed, replace the uuid with your auth user ids or leave to gen_random
-(gen_random_uuid(),'sarah@example.com','sarah_pawsome','Sarah','https://picsum.photos/64','Dog lover and photographer'),
-(gen_random_uuid(),'mike@example.com','cat_dad_mike','Mike','https://picsum.photos/64','Cat dad and baker')
+('sarah@example.com','sarah_pawsome','Sarah','https://picsum.photos/64','Dog lover and photographer'),
+('mike@example.com','cat_dad_mike','Mike','https://picsum.photos/64','Cat dad and baker')
+on conflict (email) do nothing;
+
+-- Insert sample pets without owners (owner_id is nullable)
+insert into public.pets (name, age, breed, location, image, bio)
+values
+('Max','2 yrs','Golden Retriever','2 miles away','https://picsum.photos/400','I love long walks and belly rubs!'),
+('Whiskers','1 yr','Orange Tabby','5 miles away','https://picsum.photos/401','Professional napper and treat connoisseur.'),
+('Bruno','8 mo','French Bulldog','1 mile away','https://picsum.photos/402','Snort expert and zoomies champion!')
 on conflict do nothing;
 
--- DEV RLS EXAMPLES (uncomment & adapt for production)
--- Notes: For production you should enable RLS and create policies that use auth.uid() to scope rows.
--- Example: allow users to read their own profile and allow anon read on feed_posts for public feed.
+-- Enable RLS if not already enabled
+alter table public.feed_posts enable row level security;
 
--- enable row level security on tables you want to protect
--- alter table public.profiles enable row level security;
--- create policy "Profiles: allow self read/write" on public.profiles
---   for all using (auth.uid() = id) with check (auth.uid() = id);
+-- Create policies only if they don't exist (will error if they exist, but that's ok)
+do $$ 
+begin
+  if not exists (select 1 from pg_policies where tablename = 'feed_posts' and policyname = 'Allow anon insert on feed_posts') then
+    create policy "Allow anon insert on feed_posts" on public.feed_posts for insert to anon with check (true);
+  end if;
+  if not exists (select 1 from pg_policies where tablename = 'feed_posts' and policyname = 'Allow select for anon') then
+    create policy "Allow select for anon" on public.feed_posts for select using (true);
+  end if;
+end $$;
 
--- alter table public.feed_posts enable row level security;
--- create policy "Feed: public read" on public.feed_posts for select using (true);
--- create policy "Feed: insert post as authenticated" on public.feed_posts for insert
---   with check (auth.uid() = profile_id);
-
--- Production notes:
--- - Keep your SUPABASE_SERVICE_ROLE_KEY secret and use it server-side for privileged ops.
--- - Use Supabase Storage for user-uploaded images. Store either public URLs in arrays `images` or
---   store paths and generate signed URLs when serving private content.
--- - Run these SQL migrations in Supabase SQL Editor. Review RLS policies carefully before enabling.
+-- Notes:
+-- - For production, create strict RLS policies and use Supabase Auth. Use service role for server-side operations.
+-- - Supabase auto-generates REST endpoints at /rest/v1/<table> so frontend can call e.g. /rest/v1/feed_posts?select=*
+-- - Use Supabase Storage for hosting images; store public URLs in image fields or use signed URLs for private content.
