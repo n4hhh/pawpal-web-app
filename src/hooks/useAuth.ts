@@ -36,14 +36,14 @@ export function useAuth() {
       setLoading(false);
       if (userObj) {
         // derive display name and avatar from user_metadata if available
-        const metadata: any = userObj.user_metadata ?? {};
+        const metadata = (userObj.user_metadata ?? {}) as Record<string, unknown>;
         const display_name = metadata.full_name || metadata.name || metadata.preferred_username || null;
         const avatar = metadata.avatar_url || metadata.picture || metadata.avatar || null;
         const payload = { ...userObj, display_name, avatar };
         try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await upsertProfile(payload as any);
         } catch (err) {
-          // eslint-disable-next-line no-console
           console.warn('Error upserting profile', err);
         }
       }

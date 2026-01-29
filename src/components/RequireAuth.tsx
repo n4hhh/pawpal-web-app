@@ -7,7 +7,7 @@ export const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children 
   const location = useLocation();
 
   if (loading) return <div className="p-4">Loading...</div>;
-  if (!user) return <Navigate to="/auth" state={{ from: location }} replace />;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   return <>{children}</>;
 };
 
