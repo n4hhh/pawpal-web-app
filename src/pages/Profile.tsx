@@ -35,8 +35,8 @@ const Profile = () => {
 
       try {
         const { data, error } = await supabase
-          .from('users')
-          .select('id, email, username, display_name, avatar, bio, created_at')
+          .from('profiles')
+          .select('id, email, full_name, avatar_url, bio')
           .eq('id', user.id)
           .single();
 
@@ -45,7 +45,15 @@ const Profile = () => {
           setUserProfile(null);
         } else {
           console.log('Profile fetched successfully:', data);
-          setUserProfile(data);
+          // Map profiles columns to expected format
+          setUserProfile({
+            id: data.id,
+            email: data.email,
+            username: data.email?.split('@')[0] || 'user',
+            display_name: data.full_name || data.email?.split('@')[0] || 'User',
+            avatar: data.avatar_url,
+            bio: data.bio
+          });
         }
       } catch (err) {
         console.error('Unexpected error:', err);
