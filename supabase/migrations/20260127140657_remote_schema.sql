@@ -250,217 +250,623 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
 
 
-ALTER TABLE ONLY "public"."feed_posts"
-    ADD CONSTRAINT "feed_posts_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."order_items"
-    ADD CONSTRAINT "order_items_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."pet_matches"
-    ADD CONSTRAINT "pet_matches_pet_a_pet_b_key" UNIQUE ("pet_a", "pet_b");
-
-
-
-ALTER TABLE ONLY "public"."pet_matches"
-    ADD CONSTRAINT "pet_matches_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."pet_messages"
-    ADD CONSTRAINT "pet_messages_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."pet_preferences"
-    ADD CONSTRAINT "pet_preferences_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."pet_swipes"
-    ADD CONSTRAINT "pet_swipes_from_pet_id_to_pet_id_key" UNIQUE ("from_pet_id", "to_pet_id");
-
-
-
-ALTER TABLE ONLY "public"."pet_swipes"
-    ADD CONSTRAINT "pet_swipes_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."pets"
-    ADD CONSTRAINT "pets_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."post_comments"
-    ADD CONSTRAINT "post_comments_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."post_likes"
-    ADD CONSTRAINT "post_likes_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."post_likes"
-    ADD CONSTRAINT "post_likes_post_id_user_id_key" UNIQUE ("post_id", "user_id");
-
-
-
-ALTER TABLE ONLY "public"."product_categories"
-    ADD CONSTRAINT "product_categories_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."product_category_map"
-    ADD CONSTRAINT "product_category_map_pkey" PRIMARY KEY ("product_id", "category_id");
-
-
-
-ALTER TABLE ONLY "public"."products"
-    ADD CONSTRAINT "products_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_email_key" UNIQUE ("email");
-
-
-
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
-
-
-
-CREATE INDEX "idx_profiles_email" ON "public"."profiles" USING "btree" ("email");
-
-
-
-ALTER TABLE ONLY "public"."feed_posts"
-    ADD CONSTRAINT "feed_posts_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."feed_posts"
-    ADD CONSTRAINT "feed_posts_pet_id_fkey" FOREIGN KEY ("pet_id") REFERENCES "public"."pets"("id");
-
-
-
-ALTER TABLE ONLY "public"."order_items"
-    ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."order_items"
-    ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id");
-
-
-
-ALTER TABLE ONLY "public"."orders"
-    ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."pet_matches"
-    ADD CONSTRAINT "pet_matches_pet_a_fkey" FOREIGN KEY ("pet_a") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pet_matches"
-    ADD CONSTRAINT "pet_matches_pet_b_fkey" FOREIGN KEY ("pet_b") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pet_messages"
-    ADD CONSTRAINT "pet_messages_match_id_fkey" FOREIGN KEY ("match_id") REFERENCES "public"."pet_matches"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pet_messages"
-    ADD CONSTRAINT "pet_messages_sender_pet_id_fkey" FOREIGN KEY ("sender_pet_id") REFERENCES "public"."pets"("id");
-
-
-
-ALTER TABLE ONLY "public"."pet_preferences"
-    ADD CONSTRAINT "pet_preferences_pet_id_fkey" FOREIGN KEY ("pet_id") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pet_swipes"
-    ADD CONSTRAINT "pet_swipes_from_pet_id_fkey" FOREIGN KEY ("from_pet_id") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pet_swipes"
-    ADD CONSTRAINT "pet_swipes_to_pet_id_fkey" FOREIGN KEY ("to_pet_id") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."pets"
-    ADD CONSTRAINT "pets_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id");
-
-
-
-ALTER TABLE ONLY "public"."post_comments"
-    ADD CONSTRAINT "post_comments_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."feed_posts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."post_comments"
-    ADD CONSTRAINT "post_comments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."post_likes"
-    ADD CONSTRAINT "post_likes_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."feed_posts"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."post_likes"
-    ADD CONSTRAINT "post_likes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."product_category_map"
-    ADD CONSTRAINT "product_category_map_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."product_categories"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."product_category_map"
-    ADD CONSTRAINT "product_category_map_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-CREATE POLICY "Allow select for anon" ON "public"."feed_posts" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Allow select for anon" ON "public"."pets" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Users can insert own profile" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
-
-
-
-CREATE POLICY "Users can read own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
-
-
-
-CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'feed_posts_pkey'
+            AND conrelid = 'public.feed_posts'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."feed_posts"
+            ADD CONSTRAINT "feed_posts_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'order_items_pkey'
+            AND conrelid = 'public.order_items'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."order_items"
+            ADD CONSTRAINT "order_items_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'orders_pkey'
+            AND conrelid = 'public.orders'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."orders"
+            ADD CONSTRAINT "orders_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_matches_pet_a_pet_b_key'
+            AND conrelid = 'public.pet_matches'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_matches"
+            ADD CONSTRAINT "pet_matches_pet_a_pet_b_key" UNIQUE ("pet_a", "pet_b");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_matches_pkey'
+            AND conrelid = 'public.pet_matches'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_matches"
+            ADD CONSTRAINT "pet_matches_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_messages_pkey'
+            AND conrelid = 'public.pet_messages'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_messages"
+            ADD CONSTRAINT "pet_messages_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_preferences_pkey'
+            AND conrelid = 'public.pet_preferences'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_preferences"
+            ADD CONSTRAINT "pet_preferences_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_swipes_from_pet_id_to_pet_id_key'
+            AND conrelid = 'public.pet_swipes'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_swipes"
+            ADD CONSTRAINT "pet_swipes_from_pet_id_to_pet_id_key" UNIQUE ("from_pet_id", "to_pet_id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_swipes_pkey'
+            AND conrelid = 'public.pet_swipes'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_swipes"
+            ADD CONSTRAINT "pet_swipes_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pets_pkey'
+            AND conrelid = 'public.pets'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pets"
+            ADD CONSTRAINT "pets_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'post_comments_pkey'
+            AND conrelid = 'public.post_comments'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."post_comments"
+            ADD CONSTRAINT "post_comments_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'post_likes_pkey'
+            AND conrelid = 'public.post_likes'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."post_likes"
+            ADD CONSTRAINT "post_likes_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'post_likes_post_id_user_id_key'
+            AND conrelid = 'public.post_likes'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."post_likes"
+            ADD CONSTRAINT "post_likes_post_id_user_id_key" UNIQUE ("post_id", "user_id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'product_categories_pkey'
+            AND conrelid = 'public.product_categories'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."product_categories"
+            ADD CONSTRAINT "product_categories_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'product_category_map_pkey'
+            AND conrelid = 'public.product_category_map'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."product_category_map"
+            ADD CONSTRAINT "product_category_map_pkey" PRIMARY KEY ("product_id", "category_id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'products_pkey'
+            AND conrelid = 'public.products'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."products"
+            ADD CONSTRAINT "products_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'profiles_email_key'
+            AND conrelid = 'public.profiles'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."profiles"
+            ADD CONSTRAINT "profiles_email_key" UNIQUE ("email");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'profiles_pkey'
+            AND conrelid = 'public.profiles'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."profiles"
+            ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
+
+
+
+CREATE INDEX IF NOT EXISTS "idx_profiles_email" ON "public"."profiles" USING "btree" ("email");
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'feed_posts_author_id_fkey'
+            AND conrelid = 'public.feed_posts'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."feed_posts"
+            ADD CONSTRAINT "feed_posts_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "auth"."users"("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'feed_posts_pet_id_fkey'
+            AND conrelid = 'public.feed_posts'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."feed_posts"
+            ADD CONSTRAINT "feed_posts_pet_id_fkey" FOREIGN KEY ("pet_id") REFERENCES "public"."pets"("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'order_items_order_id_fkey'
+            AND conrelid = 'public.order_items'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."order_items"
+            ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'order_items_product_id_fkey'
+            AND conrelid = 'public.order_items'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."order_items"
+            ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'orders_user_id_fkey'
+            AND conrelid = 'public.orders'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."orders"
+            ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_matches_pet_a_fkey'
+            AND conrelid = 'public.pet_matches'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_matches"
+            ADD CONSTRAINT "pet_matches_pet_a_fkey" FOREIGN KEY ("pet_a") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_matches_pet_b_fkey'
+            AND conrelid = 'public.pet_matches'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_matches"
+            ADD CONSTRAINT "pet_matches_pet_b_fkey" FOREIGN KEY ("pet_b") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_messages_match_id_fkey'
+            AND conrelid = 'public.pet_messages'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_messages"
+            ADD CONSTRAINT "pet_messages_match_id_fkey" FOREIGN KEY ("match_id") REFERENCES "public"."pet_matches"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_messages_sender_pet_id_fkey'
+            AND conrelid = 'public.pet_messages'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_messages"
+            ADD CONSTRAINT "pet_messages_sender_pet_id_fkey" FOREIGN KEY ("sender_pet_id") REFERENCES "public"."pets"("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_preferences_pet_id_fkey'
+            AND conrelid = 'public.pet_preferences'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_preferences"
+            ADD CONSTRAINT "pet_preferences_pet_id_fkey" FOREIGN KEY ("pet_id") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_swipes_from_pet_id_fkey'
+            AND conrelid = 'public.pet_swipes'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_swipes"
+            ADD CONSTRAINT "pet_swipes_from_pet_id_fkey" FOREIGN KEY ("from_pet_id") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pet_swipes_to_pet_id_fkey'
+            AND conrelid = 'public.pet_swipes'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pet_swipes"
+            ADD CONSTRAINT "pet_swipes_to_pet_id_fkey" FOREIGN KEY ("to_pet_id") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pets_owner_id_fkey'
+            AND conrelid = 'public.pets'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pets"
+            ADD CONSTRAINT "pets_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id");
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'post_comments_post_id_fkey'
+            AND conrelid = 'public.post_comments'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."post_comments"
+            ADD CONSTRAINT "post_comments_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."feed_posts"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'post_comments_user_id_fkey'
+            AND conrelid = 'public.post_comments'::regclass
+    ) AND EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'post_comments'
+          AND column_name = 'user_id'
+          AND udt_name = 'uuid'
+    ) THEN
+        ALTER TABLE ONLY "public"."post_comments"
+            ADD CONSTRAINT "post_comments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'post_likes_post_id_fkey'
+            AND conrelid = 'public.post_likes'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."post_likes"
+            ADD CONSTRAINT "post_likes_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."feed_posts"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'post_likes_user_id_fkey'
+            AND conrelid = 'public.post_likes'::regclass
+    ) AND EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'post_likes'
+          AND column_name = 'user_id'
+          AND udt_name = 'uuid'
+    ) THEN
+        ALTER TABLE ONLY "public"."post_likes"
+            ADD CONSTRAINT "post_likes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'product_category_map_category_id_fkey'
+            AND conrelid = 'public.product_category_map'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."product_category_map"
+            ADD CONSTRAINT "product_category_map_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."product_categories"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'product_category_map_product_id_fkey'
+            AND conrelid = 'public.product_category_map'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."product_category_map"
+            ADD CONSTRAINT "product_category_map_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'profiles_id_fkey'
+            AND conrelid = 'public.profiles'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."profiles"
+            ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'feed_posts'
+            AND policyname = 'Allow select for anon'
+    ) THEN
+        CREATE POLICY "Allow select for anon" ON "public"."feed_posts" FOR SELECT USING (true);
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'pets'
+            AND policyname = 'Allow select for anon'
+    ) THEN
+        CREATE POLICY "Allow select for anon" ON "public"."pets" FOR SELECT USING (true);
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'profiles'
+            AND policyname = 'Users can insert own profile'
+    ) THEN
+        CREATE POLICY "Users can insert own profile" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'profiles'
+            AND policyname = 'Users can read own profile'
+    ) THEN
+        CREATE POLICY "Users can read own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
+    END IF;
+END $$;
+
+
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'profiles'
+            AND policyname = 'Users can update own profile'
+    ) THEN
+        CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
+    END IF;
+END $$;
 
 
 
@@ -803,6 +1209,19 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 drop extension if exists "pg_net";
 
-CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+DO $$
+BEGIN
+        IF NOT EXISTS (
+                SELECT 1
+                FROM pg_trigger
+                WHERE tgname = 'on_auth_user_created'
+                    AND tgrelid = 'auth.users'::regclass
+        ) THEN
+                CREATE TRIGGER on_auth_user_created
+                    AFTER INSERT ON auth.users
+                    FOR EACH ROW
+                    EXECUTE FUNCTION public.handle_new_user();
+        END IF;
+END $$;
 
 

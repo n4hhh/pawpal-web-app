@@ -126,13 +126,31 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
 
 
-ALTER TABLE ONLY "public"."feed_posts"
-    ADD CONSTRAINT "feed_posts_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'feed_posts_pkey'
+            AND conrelid = 'public.feed_posts'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."feed_posts"
+            ADD CONSTRAINT "feed_posts_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
 
 
 
-ALTER TABLE ONLY "public"."pets"
-    ADD CONSTRAINT "pets_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'pets_pkey'
+            AND conrelid = 'public.pets'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."pets"
+            ADD CONSTRAINT "pets_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
 
 
 
@@ -141,8 +159,17 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'profiles_pkey'
+            AND conrelid = 'public.profiles'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."profiles"
+            ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+    END IF;
+END $$;
 
 
 
@@ -155,23 +182,65 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
-CREATE POLICY "Allow select for anon" ON "public"."feed_posts" FOR SELECT USING (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'feed_posts'
+            AND policyname = 'Allow select for anon'
+    ) THEN
+        CREATE POLICY "Allow select for anon" ON "public"."feed_posts" FOR SELECT USING (true);
+    END IF;
+END $$;
 
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'pets'
+            AND policyname = 'Allow select for anon'
+    ) THEN
+        CREATE POLICY "Allow select for anon" ON "public"."pets" FOR SELECT USING (true);
+    END IF;
+END $$;
 
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'profiles'
+            AND policyname = 'Users can insert own profile'
+    ) THEN
+        CREATE POLICY "Users can insert own profile" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
+    END IF;
+END $$;
 
-CREATE POLICY "Allow select for anon" ON "public"."pets" FOR SELECT USING (true);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'profiles'
+            AND policyname = 'Users can read own profile'
+    ) THEN
+        CREATE POLICY "Users can read own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
+    END IF;
+END $$;
 
-
-
-CREATE POLICY "Users can insert own profile" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
-
-
-
-CREATE POLICY "Users can read own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
-
-
-
-CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies
+        WHERE schemaname = 'public'
+            AND tablename = 'profiles'
+            AND policyname = 'Users can update own profile'
+    ) THEN
+        CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
+    END IF;
+END $$;
 
 
 
@@ -448,6 +517,19 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 drop extension if exists "pg_net";
 
-CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE tgname = 'on_auth_user_created'
+            AND tgrelid = 'auth.users'::regclass
+    ) THEN
+        CREATE TRIGGER on_auth_user_created
+            AFTER INSERT ON auth.users
+            FOR EACH ROW
+            EXECUTE FUNCTION public.handle_new_user();
+    END IF;
+END $$;
 
 
