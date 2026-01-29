@@ -5,81 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-import pet1 from "@/assets/pet1.jpg";
-import pet2 from "@/assets/pet2.jpg";
-import pet3 from "@/assets/pet3.jpg";
-import pet4 from "@/assets/pet4.jpg";
-import pet5 from "@/assets/pet5.jpg";
+import { useShop } from '@/hooks/useShop';
+import ProductCard from '@/components/ProductCard';
 
 const categories = ["All", "Food", "Toys", "Accessories", "Health", "Grooming"];
 
-const products = [
-  {
-    id: "1",
-    name: "Premium Dog Food",
-    description: "High-quality nutrition for your furry friend",
-    price: 29.99,
-    rating: 4.8,
-    reviews: 234,
-    image: pet1,
-    category: "Food",
-    badge: "Best Seller",
-  },
-  {
-    id: "2",
-    name: "Catnip Mouse Toy",
-    description: "Interactive toy to keep your cat entertained",
-    price: 9.99,
-    rating: 4.5,
-    reviews: 89,
-    image: pet2,
-    category: "Toys",
-  },
-  {
-    id: "3",
-    name: "Cozy Pet Bed",
-    description: "Ultra-soft bed for maximum comfort",
-    price: 49.99,
-    rating: 4.9,
-    reviews: 156,
-    image: pet3,
-    category: "Accessories",
-    badge: "New",
-  },
-  {
-    id: "4",
-    name: "Pet Vitamins",
-    description: "Essential vitamins for a healthy pet",
-    price: 19.99,
-    rating: 4.7,
-    reviews: 67,
-    image: pet4,
-    category: "Health",
-  },
-  {
-    id: "5",
-    name: "Grooming Kit",
-    description: "Complete grooming set for all pet types",
-    price: 34.99,
-    rating: 4.6,
-    reviews: 123,
-    image: pet5,
-    category: "Grooming",
-    badge: "Popular",
-  },
-  {
-    id: "6",
-    name: "Interactive Ball",
-    description: "Smart toy that moves on its own",
-    price: 24.99,
-    rating: 4.4,
-    reviews: 78,
-    image: pet1,
-    category: "Toys",
-  },
-];
-
 export default function Shop() {
+  const { data: items = [] } = useShop();
+
   return (
     <Layout>
       <div className="container mx-auto px-4 lg:px-8 py-8">
@@ -152,7 +85,7 @@ export default function Shop() {
 
             {/* View Toggle & Results Count */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-muted-foreground">{products.length} products</p>
+              <p className="text-muted-foreground">{items.length} products</p>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon">
                   <Grid className="w-4 h-4" />
@@ -165,48 +98,8 @@ export default function Shop() {
 
             {/* Products */}
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {products.map((product) => (
-                <Card
-                  key={product.id}
-                  className="overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"
-                >
-                  <div className="relative aspect-square overflow-hidden">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {product.badge && (
-                      <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
-                        {product.badge}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                      {product.description}
-                    </p>
-                    <div className="flex items-center gap-1 mb-3">
-                      <Star className="w-4 h-4 fill-peach text-peach" />
-                      <span className="text-sm font-medium text-foreground">
-                        {product.rating}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        ({product.reviews} reviews)
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl font-bold text-primary">${product.price}</span>
-                      <Button size="sm" className="rounded-full gap-2">
-                        <ShoppingBag className="w-4 h-4" />
-                        Add
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
+              {(items || []).map((product) => (
+                <ProductCard key={product.id} item={product} />
               ))}
             </div>
           </div>

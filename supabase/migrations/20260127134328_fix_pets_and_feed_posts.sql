@@ -1,4 +1,4 @@
-create table public.pet_preferences (
+create table if not exists public.pet_preferences (
   id uuid primary key default gen_random_uuid(),
   pet_id uuid references public.pets(id) on delete cascade,
   preferred_breed text,
@@ -8,7 +8,7 @@ create table public.pet_preferences (
   created_at timestamptz default now()
 );
 
-create table public.pet_swipes (
+create table if not exists public.pet_swipes (
   id uuid primary key default gen_random_uuid(),
   from_pet_id uuid references public.pets(id) on delete cascade,
   to_pet_id uuid references public.pets(id) on delete cascade,
@@ -17,7 +17,7 @@ create table public.pet_swipes (
   unique (from_pet_id, to_pet_id)
 );
 
-create table public.pet_matches (
+create table if not exists public.pet_matches (
   id uuid primary key default gen_random_uuid(),
   pet_a uuid references public.pets(id) on delete cascade,
   pet_b uuid references public.pets(id) on delete cascade,
@@ -25,7 +25,7 @@ create table public.pet_matches (
   unique (pet_a, pet_b)
 );
 
-create table public.pet_messages (
+create table if not exists public.pet_messages (
   id uuid primary key default gen_random_uuid(),
   match_id uuid references public.pet_matches(id) on delete cascade,
   sender_pet_id uuid references public.pets(id),
@@ -33,7 +33,7 @@ create table public.pet_messages (
   created_at timestamptz default now()
 );
 
-create table public.products (
+create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   description text,
@@ -42,18 +42,18 @@ create table public.products (
   stock int default 0,
   created_at timestamptz default now()
 );
-create table public.product_categories (
+create table if not exists public.product_categories (
   id uuid primary key default gen_random_uuid(),
   name text not null
 );
 
-create table public.product_category_map (
+create table if not exists public.product_category_map (
   product_id uuid references public.products(id) on delete cascade,
   category_id uuid references public.product_categories(id) on delete cascade,
   primary key (product_id, category_id)
 );
 
-create table public.orders (
+create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id),
   status text default 'pending',
@@ -61,7 +61,7 @@ create table public.orders (
   created_at timestamptz default now()
 );
 
-create table public.order_items (
+create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid references public.orders(id) on delete cascade,
   product_id uuid references public.products(id),

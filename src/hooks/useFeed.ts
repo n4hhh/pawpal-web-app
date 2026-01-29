@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { supabase, hasSupabaseEnv } from '@/lib/supabase';
 import { feedPosts as mockFeed } from '@/data/mockData';
 
 type FeedPost = (typeof mockFeed)[number];
@@ -53,11 +53,30 @@ export function useFeed() {
     queryKey: ['feed'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.from('feed_posts').select('*');
-        if (error) {
+        if (!hasSupabaseEnv) {
+          return mockFeed;
+        }
+
+        const timeoutMs = 8000;
+        const timeoutPromise = new Promise<null>((resolve) =>
+          setTimeout(() => resolve(null), timeoutMs)
+        );
+
+        const requestPromise = (async () => {
+          const { data, error } = await supabase.from('feed_posts').select('*');
+          if (error) {
+            // eslint-disable-next-line no-console
+            console.warn('Error fetching feed:', error);
+            throw error;
+          }
+          return data ?? [];
+        })();
+
+        const data = await Promise.race([requestPromise, timeoutPromise]);
+        if (!data) {
           // eslint-disable-next-line no-console
-          console.warn('Error fetching feed:', error);
-          throw error;
+          console.warn('Feed request timed out, using mock data');
+          return mockFeed;
         }
         if (!data || data.length === 0) {
           // eslint-disable-next-line no-console
