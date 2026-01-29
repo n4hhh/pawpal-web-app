@@ -90,6 +90,32 @@ CREATE TABLE IF NOT EXISTS "public"."feed_posts" (
 ALTER TABLE "public"."feed_posts" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."matches" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "pet_id" "uuid",
+    "status" "text" DEFAULT 'pending'::"text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."matches" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."messages" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "conversation_id" "uuid",
+    "sender_id" "uuid",
+    "recipient_id" "uuid",
+    "body" "text",
+    "delivered" boolean DEFAULT false,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."messages" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."order_items" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "order_id" "uuid",
@@ -182,7 +208,7 @@ ALTER TABLE "public"."pets" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."post_comments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "post_id" "uuid",
-    "user_id" "uuid",
+    "user_id" "text",
     "content" "text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"()
 );
@@ -250,8 +276,60 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."purchases" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "item_id" "uuid",
+    "quantity" integer DEFAULT 1,
+    "amount_paid" numeric(10,2),
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."purchases" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."shop_items" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "title" "text" NOT NULL,
+    "description" "text",
+    "price" numeric(10,2) NOT NULL,
+    "image" "text",
+    "stock" integer DEFAULT 0,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "images" "text"[]
+);
+
+
+ALTER TABLE "public"."shop_items" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."users" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "email" "text",
+    "username" "text",
+    "display_name" "text",
+    "avatar" "text",
+    "bio" "text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."users" OWNER TO "postgres";
+
+
 ALTER TABLE ONLY "public"."feed_posts"
     ADD CONSTRAINT "feed_posts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."matches"
+    ADD CONSTRAINT "matches_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."messages"
+    ADD CONSTRAINT "messages_pkey" PRIMARY KEY ("id");
 
 
 
@@ -340,6 +418,43 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
+ALTER TABLE ONLY "public"."purchases"
+    ADD CONSTRAINT "purchases_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."shop_items"
+    ADD CONSTRAINT "shop_items_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."users"
+    ADD CONSTRAINT "users_email_key" UNIQUE ("email");
+
+
+
+ALTER TABLE ONLY "public"."users"
+    ADD CONSTRAINT "users_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."users"
+    ADD CONSTRAINT "users_username_key" UNIQUE ("username");
+
+
+
+CREATE INDEX "idx_feed_posts_created" ON "public"."feed_posts" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_messages_conv" ON "public"."messages" USING "btree" ("conversation_id");
+
+
+
+CREATE INDEX "idx_pets_owner" ON "public"."pets" USING "btree" ("owner_id");
+
+
+
 CREATE INDEX "idx_profiles_email" ON "public"."profiles" USING "btree" ("email");
 
 
@@ -351,6 +466,26 @@ ALTER TABLE ONLY "public"."feed_posts"
 
 ALTER TABLE ONLY "public"."feed_posts"
     ADD CONSTRAINT "feed_posts_pet_id_fkey" FOREIGN KEY ("pet_id") REFERENCES "public"."pets"("id");
+
+
+
+ALTER TABLE ONLY "public"."matches"
+    ADD CONSTRAINT "matches_pet_id_fkey" FOREIGN KEY ("pet_id") REFERENCES "public"."pets"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."matches"
+    ADD CONSTRAINT "matches_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."messages"
+    ADD CONSTRAINT "messages_recipient_id_fkey" FOREIGN KEY ("recipient_id") REFERENCES "public"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."messages"
+    ADD CONSTRAINT "messages_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "public"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -414,11 +549,6 @@ ALTER TABLE ONLY "public"."post_comments"
 
 
 
-ALTER TABLE ONLY "public"."post_comments"
-    ADD CONSTRAINT "post_comments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY "public"."post_likes"
     ADD CONSTRAINT "post_likes_post_id_fkey" FOREIGN KEY ("post_id") REFERENCES "public"."feed_posts"("id") ON DELETE CASCADE;
 
@@ -444,11 +574,256 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 
+ALTER TABLE ONLY "public"."purchases"
+    ADD CONSTRAINT "purchases_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "public"."shop_items"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."purchases"
+    ADD CONSTRAINT "purchases_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE SET NULL;
+
+
+
+CREATE POLICY "Allow public insert" ON "public"."feed_posts" FOR INSERT WITH CHECK (true);
+
+
+
+CREATE POLICY "Allow public select" ON "public"."feed_posts" FOR SELECT USING (true);
+
+
+
 CREATE POLICY "Allow select for anon" ON "public"."feed_posts" FOR SELECT USING (true);
 
 
 
 CREATE POLICY "Allow select for anon" ON "public"."pets" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Feed: delete owner" ON "public"."feed_posts" FOR DELETE USING (("author_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Feed: insert as owner" ON "public"."feed_posts" FOR INSERT WITH CHECK (("author_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Feed: public select" ON "public"."feed_posts" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Feed: update owner" ON "public"."feed_posts" FOR UPDATE USING (("author_id" = "auth"."uid"())) WITH CHECK (("author_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Messages: sender delete" ON "public"."messages" FOR DELETE USING (("sender_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Messages: sender insert" ON "public"."messages" FOR INSERT WITH CHECK (("sender_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Messages: sender update" ON "public"."messages" FOR UPDATE USING (("sender_id" = "auth"."uid"())) WITH CHECK (("sender_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "OrderItems: order owner select" ON "public"."order_items" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."orders" "o"
+  WHERE (("o"."id" = "order_items"."order_id") AND ("o"."user_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Orders: self delete" ON "public"."orders" FOR DELETE USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Orders: self insert" ON "public"."orders" FOR INSERT WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Orders: self select" ON "public"."orders" FOR SELECT USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Orders: self update" ON "public"."orders" FOR UPDATE USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "PetMatches: participant select" ON "public"."pet_matches" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = ANY (ARRAY["pet_matches"."pet_a", "pet_matches"."pet_b"])) AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetMessages: participant select" ON "public"."pet_messages" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM ("public"."pet_matches" "m"
+     JOIN "public"."pets" "p" ON ((("p"."id" = "m"."pet_a") OR ("p"."id" = "m"."pet_b"))))
+  WHERE (("m"."id" = "pet_messages"."match_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetMessages: sender delete" ON "public"."pet_messages" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_messages"."sender_pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetMessages: sender insert" ON "public"."pet_messages" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_messages"."sender_pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetMessages: sender update" ON "public"."pet_messages" FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_messages"."sender_pet_id") AND ("p"."owner_id" = "auth"."uid"()))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_messages"."sender_pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetPreferences: owner delete" ON "public"."pet_preferences" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_preferences"."pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetPreferences: owner insert" ON "public"."pet_preferences" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_preferences"."pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetPreferences: owner select" ON "public"."pet_preferences" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_preferences"."pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetPreferences: owner update" ON "public"."pet_preferences" FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_preferences"."pet_id") AND ("p"."owner_id" = "auth"."uid"()))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_preferences"."pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetSwipes: owner delete" ON "public"."pet_swipes" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_swipes"."from_pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetSwipes: owner insert" ON "public"."pet_swipes" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_swipes"."from_pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetSwipes: owner select" ON "public"."pet_swipes" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_swipes"."from_pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "PetSwipes: owner update" ON "public"."pet_swipes" FOR UPDATE USING ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_swipes"."from_pet_id") AND ("p"."owner_id" = "auth"."uid"()))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."pets" "p"
+  WHERE (("p"."id" = "pet_swipes"."from_pet_id") AND ("p"."owner_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Pets: owner delete" ON "public"."pets" FOR DELETE USING (("owner_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Pets: owner insert" ON "public"."pets" FOR INSERT WITH CHECK (("owner_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Pets: owner update" ON "public"."pets" FOR UPDATE USING (("owner_id" = "auth"."uid"())) WITH CHECK (("owner_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Pets: public select" ON "public"."pets" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "PostComments: author delete" ON "public"."post_comments" FOR DELETE USING (("user_id" = ("auth"."uid"())::"text"));
+
+
+
+CREATE POLICY "PostComments: author insert" ON "public"."post_comments" FOR INSERT WITH CHECK (("user_id" = ("auth"."uid"())::"text"));
+
+
+
+CREATE POLICY "PostComments: author update" ON "public"."post_comments" FOR UPDATE USING (("user_id" = ("auth"."uid"())::"text")) WITH CHECK (("user_id" = ("auth"."uid"())::"text"));
+
+
+
+CREATE POLICY "PostComments: public select" ON "public"."post_comments" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "PostLikes: delete by profile" ON "public"."post_likes" FOR DELETE USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "PostLikes: insert by profile" ON "public"."post_likes" FOR INSERT WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "PostLikes: public select" ON "public"."post_likes" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "ProductCategories: public select" ON "public"."product_categories" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "ProductCategoryMap: public select" ON "public"."product_category_map" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Products: public select" ON "public"."products" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "Profiles: self delete" ON "public"."profiles" FOR DELETE USING (("auth"."uid"() = "id"));
+
+
+
+CREATE POLICY "Profiles: self insert" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
+
+
+
+CREATE POLICY "Profiles: self select" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
+
+
+
+CREATE POLICY "Profiles: self update" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
+
+
+
+CREATE POLICY "Purchases: self delete" ON "public"."purchases" FOR DELETE USING ((("user_id")::"text" = ("auth"."uid"())::"text"));
+
+
+
+CREATE POLICY "Purchases: self insert" ON "public"."purchases" FOR INSERT WITH CHECK ((("user_id")::"text" = ("auth"."uid"())::"text"));
+
+
+
+CREATE POLICY "Purchases: self select" ON "public"."purchases" FOR SELECT USING ((("user_id")::"text" = ("auth"."uid"())::"text"));
+
+
+
+CREATE POLICY "Purchases: self update" ON "public"."purchases" FOR UPDATE USING ((("user_id")::"text" = ("auth"."uid"())::"text")) WITH CHECK ((("user_id")::"text" = ("auth"."uid"())::"text"));
+
+
+
+CREATE POLICY "ShopItems: public select" ON "public"."shop_items" FOR SELECT USING (true);
 
 
 
@@ -467,10 +842,55 @@ CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE U
 ALTER TABLE "public"."feed_posts" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."matches" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."order_items" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."orders" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."pet_matches" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."pet_messages" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."pet_preferences" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."pet_swipes" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."pets" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."post_comments" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."post_likes" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."product_categories" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."product_category_map" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."products" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."purchases" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."shop_items" ENABLE ROW LEVEL SECURITY;
 
 
 
@@ -662,6 +1082,18 @@ GRANT ALL ON TABLE "public"."feed_posts" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."matches" TO "anon";
+GRANT ALL ON TABLE "public"."matches" TO "authenticated";
+GRANT ALL ON TABLE "public"."matches" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."messages" TO "anon";
+GRANT ALL ON TABLE "public"."messages" TO "authenticated";
+GRANT ALL ON TABLE "public"."messages" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."order_items" TO "anon";
 GRANT ALL ON TABLE "public"."order_items" TO "authenticated";
 GRANT ALL ON TABLE "public"."order_items" TO "service_role";
@@ -740,6 +1172,24 @@ GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."purchases" TO "anon";
+GRANT ALL ON TABLE "public"."purchases" TO "authenticated";
+GRANT ALL ON TABLE "public"."purchases" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."shop_items" TO "anon";
+GRANT ALL ON TABLE "public"."shop_items" TO "authenticated";
+GRANT ALL ON TABLE "public"."shop_items" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."users" TO "anon";
+GRANT ALL ON TABLE "public"."users" TO "authenticated";
+GRANT ALL ON TABLE "public"."users" TO "service_role";
+
+
+
 
 
 
@@ -804,5 +1254,23 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 drop extension if exists "pg_net";
 
 CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+  create policy "Allow public reads"
+  on "storage"."objects"
+  as permissive
+  for select
+  to public
+using ((bucket_id = 'pet-images'::text));
+
+
+
+  create policy "Allow public uploads"
+  on "storage"."objects"
+  as permissive
+  for insert
+  to public
+with check ((bucket_id = 'pet-images'::text));
+
 
 

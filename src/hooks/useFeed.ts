@@ -53,7 +53,10 @@ export function useFeed() {
     queryKey: ['feed'],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.from('feed_posts').select('*');
+        const { data, error } = await supabase
+          .from('feed_posts')
+          .select('*')
+          .order('created_at', { ascending: false });
         if (error) {
           // eslint-disable-next-line no-console
           console.warn('Error fetching feed:', error);
