@@ -112,7 +112,10 @@ create table if not exists public.shop_items (
   title text not null,
   description text,
   price numeric(10,2) not null,
+  category text,
   images text[],
+  rating numeric(2,1) default 4.5,
+  reviews_count integer default 0,
   stock integer default 0,
   created_at timestamptz default now()
 );

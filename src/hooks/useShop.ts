@@ -6,8 +6,11 @@ export interface ShopItem {
   title: string;
   description?: string;
   price: number;
+  category?: string | null;
   images?: string[];
   stock?: number;
+  rating?: number | null;
+  reviews_count?: number | null;
 }
 
 export function useShop() {

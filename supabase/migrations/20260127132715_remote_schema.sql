@@ -154,8 +154,17 @@ END $$;
 
 
 
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_email_key" UNIQUE ("email");
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'profiles_email_key'
+            AND conrelid = 'public.profiles'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."profiles"
+            ADD CONSTRAINT "profiles_email_key" UNIQUE ("email");
+    END IF;
+END $$;
 
 
 
@@ -173,12 +182,21 @@ END $$;
 
 
 
-CREATE INDEX "idx_profiles_email" ON "public"."profiles" USING "btree" ("email");
+CREATE INDEX IF NOT EXISTS "idx_profiles_email" ON "public"."profiles" USING "btree" ("email");
 
 
 
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'profiles_id_fkey'
+            AND conrelid = 'public.profiles'::regclass
+    ) THEN
+        ALTER TABLE ONLY "public"."profiles"
+            ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+    END IF;
+END $$;
 
 
 

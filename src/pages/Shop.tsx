@@ -4,14 +4,61 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useMemo, useState } from "react";
 
 import { useShop } from '@/hooks/useShop';
 import ProductCard from '@/components/ProductCard';
 
-const categories = ["All", "Food", "Toys", "Accessories", "Health", "Grooming"];
+const categories = ["All", "Food", "Toys", "Accessories", "Health", "Grooming", "Other"];
+
+const priceRanges = [
+  { label: "Any", min: null, max: null },
+  { label: "Under $25", min: null, max: 25 },
+  { label: "$25 - $50", min: 25, max: 50 },
+  { label: "$50 - $100", min: 50, max: 100 },
+  { label: "Over $100", min: 100, max: null },
+];
+
+const ratingFilters = [
+  { label: "All", min: null },
+  { label: "4★ & up", min: 4 },
+  { label: "4.5★ & up", min: 4.5 },
+];
 
 export default function Shop() {
   const { data: items = [] } = useShop();
+  const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedPrice, setSelectedPrice] = useState("Any");
+  const [minRating, setMinRating] = useState<number | null>(null);
+
+  const filteredItems = useMemo(() => {
+    const lowerQuery = query.trim().toLowerCase();
+    const priceRange = priceRanges.find((range) => range.label === selectedPrice) ?? priceRanges[0];
+
+    return (items || []).filter((item) => {
+      const title = (item.title || "").toLowerCase();
+      const description = (item.description || "").toLowerCase();
+      const category = (item.category || "Other").toLowerCase();
+      const price = Number(item.price);
+      const rating = Number(item.rating ?? 4.5);
+
+      if (lowerQuery && !title.includes(lowerQuery) && !description.includes(lowerQuery)) {
+        return false;
+      }
+
+      if (selectedCategory !== "All" && category !== selectedCategory.toLowerCase()) {
+        return false;
+      }
+
+      if (priceRange.min !== null && price < priceRange.min) return false;
+      if (priceRange.max !== null && price > priceRange.max) return false;
+
+      if (minRating !== null && rating < minRating) return false;
+
+      return true;
+    });
+  }, [items, query, selectedCategory, selectedPrice, minRating]);
 
   return (
     <Layout>
@@ -29,6 +76,8 @@ export default function Shop() {
             <Input
               placeholder="Search products..."
               className="pl-10 bg-card border-border"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
             />
           </div>
         </div>
@@ -45,8 +94,9 @@ export default function Shop() {
                 {categories.map((category) => (
                   <Button
                     key={category}
-                    variant={category === "All" ? "default" : "ghost"}
+                    variant={category === selectedCategory ? "default" : "ghost"}
                     className="w-full justify-start"
+                    onClick={() => setSelectedCategory(category)}
                   >
                     {category}
                   </Button>
@@ -56,11 +106,31 @@ export default function Shop() {
               <div className="mt-6 pt-6 border-t border-border">
                 <h4 className="font-medium text-foreground mb-3">Price Range</h4>
                 <div className="space-y-2">
-                  {["Under $25", "$25 - $50", "$50 - $100", "Over $100"].map((range) => (
-                    <label key={range} className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="rounded border-border" />
-                      <span className="text-sm text-muted-foreground">{range}</span>
-                    </label>
+                  {priceRanges.map((range) => (
+                    <Button
+                      key={range.label}
+                      variant={range.label === selectedPrice ? "secondary" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => setSelectedPrice(range.label)}
+                    >
+                      {range.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-border">
+                <h4 className="font-medium text-foreground mb-3">Rating</h4>
+                <div className="space-y-2">
+                  {ratingFilters.map((rating) => (
+                    <Button
+                      key={rating.label}
+                      variant={rating.min === minRating ? "secondary" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => setMinRating(rating.min)}
+                    >
+                      {rating.label}
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -74,9 +144,10 @@ export default function Shop() {
               {categories.map((category, index) => (
                 <Button
                   key={category}
-                  variant={index === 0 ? "default" : "outline"}
+                  variant={category === selectedCategory ? "default" : "outline"}
                   size="sm"
                   className="rounded-full whitespace-nowrap"
+                  onClick={() => setSelectedCategory(category)}
                 >
                   {category}
                 </Button>
@@ -85,7 +156,7 @@ export default function Shop() {
 
             {/* View Toggle & Results Count */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-muted-foreground">{items.length} products</p>
+              <p className="text-muted-foreground">{filteredItems.length} products</p>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon">
                   <Grid className="w-4 h-4" />
@@ -98,7 +169,7 @@ export default function Shop() {
 
             {/* Products */}
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              {(items || []).map((product) => (
+              {filteredItems.map((product) => (
                 <ProductCard key={product.id} item={product} />
               ))}
             </div>
