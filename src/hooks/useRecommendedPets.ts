@@ -24,11 +24,10 @@ export function useRecommendedPets(options: UseRecommendedPetsOptions = {}) {
   return useQuery<RecommendedPet[], Error>({
     queryKey: ['recommended-pets', limit, filters, excludeIds],
     queryFn: async () => {
-      // Fetch active pets from database
+      // Fetch pets from database (is_active column doesn't exist)
       let query = supabase
         .from('pets')
-        .select('*')
-        .eq('is_active', true);
+        .select('*');
 
       // Exclude specific pet IDs (e.g., already matched)
       if (excludeIds.length > 0) {

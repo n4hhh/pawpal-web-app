@@ -27,41 +27,12 @@ export function useTrendingPets(options: UseTrendingPetsOptions = {}) {
   return useQuery<TrendingPet[], Error>({
     queryKey: ['trending-pets', limit],
     queryFn: async () => {
-      // Try to fetch from the trending_pets view first
-      const { data: trendingData, error: trendingError } = await supabase
-        .from('trending_pets')
-        .select('*')
-        .limit(limit);
-
-      if (!trendingError && trendingData && trendingData.length > 0) {
-        // Map database column names to camelCase
-        return trendingData.map((pet: any) => ({
-          id: pet.id,
-          name: pet.name,
-          age: pet.age,
-          breed: pet.breed,
-          location: pet.location,
-          image: pet.avatar || pet.images?.[0] || '',
-          images: pet.images || [],
-          bio: pet.bio,
-          owner: pet.owner_id,
-          viewCount: pet.view_count || 0,
-          likeCount: pet.like_count || 0,
-          matchCount: pet.match_count || 0,
-          trendingScore: pet.trending_score || 0,
-          lastTrendingUpdate: pet.last_trending_update,
-          gender: pet.gender,
-          size: pet.size,
-        })) as TrendingPet[];
-      }
-
-      // Fallback: fetch regular pets and calculate scores client-side
+      // Fetch regular pets (trending_pets view doesn't exist in this database)
       const { data, error } = await supabase
         .from('pets')
         .select('*')
-        .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .limit(50); // Fetch more to calculate trending from
+        .limit(limit * 5); // Fetch more to calculate trending from
 
       if (error) throw error;
 
