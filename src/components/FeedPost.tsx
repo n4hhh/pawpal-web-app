@@ -52,7 +52,7 @@ export function FeedPost({
       // Update the likes count in the database
       const { error } = await supabase
         .from('feed_posts')
-        .update({ likes: newCount })
+        .update({ like_count: newCount })
         .eq('id', id);
 
       if (error) throw error;

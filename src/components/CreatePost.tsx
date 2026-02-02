@@ -30,8 +30,6 @@ export function CreatePost({ open: controlledOpen, onOpenChange }: CreatePostPro
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
-  const [petName, setPetName] = useState("");
-  const [ownerName, setOwnerName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,10 +98,10 @@ export function CreatePost({ open: controlledOpen, onOpenChange }: CreatePostPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if ((!imageFile && !imageUrl) || !caption || !petName || !ownerName) {
+    if ((!imageFile && !imageUrl) || !caption) {
       toast({
         title: "Missing fields",
-        description: "Please fill in all fields and select an image",
+        description: "Please add an image and caption",
         variant: "destructive",
       });
       return;
@@ -112,38 +110,43 @@ export function CreatePost({ open: controlledOpen, onOpenChange }: CreatePostPro
     setIsSubmitting(true);
 
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error("You must be logged in to create a post");
+      }
+
+      // Fetch user profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      // Use profile data or placeholders
+      const ownerName = profile?.full_name || 'Anonymous User';
+      const petName = 'My Pet'; // Placeholder until pet selection is implemented
+
       let finalImageUrl = imageUrl;
 
       if (imageFile) {
         setIsUploading(true);
         finalImageUrl = await uploadImage(imageFile);
         setIsUploading(false);
-        console.log("Image uploaded successfully:", finalImageUrl);
       }
 
-      console.log("Attempting to insert post with data:", {
-        pet_name: petName,
-        owner_name: ownerName,
-        avatar: finalImageUrl,
-        image: finalImageUrl,
-        caption: caption,
-        likes: 0,
-        comments: 0,
-        time_ago: "Just now",
-      });
-
       const { data, error } = await supabase.from("feed_posts").insert({
+        author_id: user.id,
         pet_name: petName,
         owner_name: ownerName,
-        avatar: finalImageUrl,
+        avatar: profile?.avatar_url || '/placeholder-avatar.png',
         image: finalImageUrl,
         caption: caption,
-        likes: 0,
-        comments: 0,
+        like_count: 0,
+        comment_count: 0,
         time_ago: "Just now",
       });
-
-      console.log("Insert result:", { data, error });
 
       if (error) {
         console.error("Supabase error details:", error);
@@ -159,8 +162,6 @@ export function CreatePost({ open: controlledOpen, onOpenChange }: CreatePostPro
       setImageUrl("");
       setImageFile(null);
       setImagePreview("");
-      setPetName("");
-      setOwnerName("");
       setOpen(false);
 
       queryClient.invalidateQueries({ queryKey: ["feed"] });
@@ -187,28 +188,6 @@ export function CreatePost({ open: controlledOpen, onOpenChange }: CreatePostPro
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="petName">Pet Name</Label>
-            <Input
-              id="petName"
-              placeholder="Max, Luna, etc."
-              value={petName}
-              onChange={(e) => setPetName(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="ownerName">Your Username</Label>
-            <Input
-              id="ownerName"
-              placeholder="@your_username"
-              value={ownerName}
-              onChange={(e) => setOwnerName(e.target.value)}
-              required
-            />
-          </div>
-
           <div className="space-y-2">
             <Label>Image</Label>
             

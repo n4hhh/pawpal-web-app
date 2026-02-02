@@ -15,8 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Comment {
   id: string;
-  user_id: string;
-  content: string;
+  author_id: string;
+  body: string;
   created_at: string;
   username?: string;
   avatar?: string;
@@ -56,7 +56,6 @@ export function CommentsDialog({
   const [newComment, setNewComment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [username, setUsername] = useState("");
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(postLikes || 0);
   const [isLiking, setIsLiking] = useState(false);
@@ -72,7 +71,7 @@ export function CommentsDialog({
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from("post_comments")
+        .from("comments")
         .select("*")
         .eq("post_id", postId)
         .order("created_at", { ascending: true });
@@ -106,7 +105,7 @@ export function CommentsDialog({
       // Update the likes count in the database
       const { error } = await supabase
         .from('feed_posts')
-        .update({ likes: newCount })
+        .update({ like_count: newCount })
         .eq('id', postId);
 
       if (error) throw error;
@@ -127,10 +126,10 @@ export function CommentsDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !username.trim()) {
+    if (!newComment.trim()) {
       toast({
-        title: "Missing fields",
-        description: "Please enter your name and comment",
+        title: "Missing comment",
+        description: "Please enter a comment",
         variant: "destructive",
       });
       return;
@@ -138,13 +137,26 @@ export function CommentsDialog({
 
     setIsSubmitting(true);
     try {
-      // Insert comment with username as text
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'anonymous';
+      
+      // Get username from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single();
+
+      const username = profile?.full_name || 'Anonymous User';
+
+      // Insert comment with correct column names (author_id and body)
       const { error: commentError } = await supabase
-        .from("post_comments")
+        .from("comments")
         .insert({
           post_id: postId,
-          user_id: username.trim(), // Store username as text
-          content: newComment.trim(),
+          author_id: userId,
+          body: newComment.trim(),
         });
 
       if (commentError) {
@@ -155,7 +167,7 @@ export function CommentsDialog({
       // Update comment count
       const { error: updateError } = await supabase
         .from("feed_posts")
-        .update({ comments: commentCount + 1 })
+        .update({ comment_count: commentCount + 1 })
         .eq("id", postId);
 
       if (updateError) throw updateError;
@@ -283,19 +295,19 @@ export function CommentsDialog({
                         <Avatar className="w-8 h-8 flex-shrink-0">
                           <AvatarImage src={comment.avatar} />
                           <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {comment.user_id?.[0]?.toUpperCase() || "U"}
+                            {comment.author_id?.[0]?.toUpperCase() || "U"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline gap-2">
                             <span className="font-semibold text-sm">
-                              {comment.user_id}
+                              {comment.author_id}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {formatTimeAgo(comment.created_at)}
                             </span>
                           </div>
-                          <p className="text-sm mt-1 break-words">{comment.content}</p>
+                          <p className="text-sm mt-1 break-words">{comment.body}</p>
                         </div>
                       </div>
                     ))}
@@ -323,36 +335,27 @@ export function CommentsDialog({
 
             {/* Comment Input */}
             <div className="border-t px-4 py-3">
-              <form onSubmit={handleSubmit} className="space-y-2">
+              <form onSubmit={handleSubmit} className="flex items-center gap-2">
                 <Input
-                  placeholder="Your name (required)"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Add a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
                   disabled={isSubmitting}
-                  className="text-xs"
+                  className="flex-1 border-0 focus-visible:ring-0 px-0"
                 />
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Add a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    disabled={isSubmitting}
-                    className="flex-1 border-0 focus-visible:ring-0 px-0"
-                  />
-                  <Button
-                    type="submit"
-                    variant="ghost"
-                    size="sm"
-                    disabled={isSubmitting || !username.trim() || !newComment.trim()}
-                    className="text-primary font-semibold hover:text-primary/80 px-0"
-                  >
+                <Button
+                  type="submit"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isSubmitting || !newComment.trim()}
+                  className="text-primary font-semibold hover:text-primary/80 px-0"
+                >
                     {isSubmitting ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       "Post"
                     )}
                   </Button>
-                </div>
               </form>
             </div>
           </div>

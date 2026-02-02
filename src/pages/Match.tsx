@@ -3,25 +3,40 @@ import { Layout } from "@/components/Layout";
 import { PetCard } from "@/components/PetCard";
 import { SwipeButtons } from "@/components/SwipeButtons";
 import { mockPets } from "@/data/mockData";
-import { Sparkles, Filter, MapPin } from "lucide-react";
+import { Sparkles, Filter, MapPin, TrendingUp, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useTrendingPets, useTrackPetView, useTrackPetLike, useTrackPetMatch } from "@/hooks/useTrendingPets";
+import { getTrendingBadge } from "@/lib/trending";
 
 const Match = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
   const [matchedPets, setMatchedPets] = useState<string[]>([]);
   const [showMatch, setShowMatch] = useState(false);
+  
+  // Fetch trending pets and tracking hooks
+  const { data: trendingPets, isLoading: isTrendingLoading } = useTrendingPets({ limit: 5 });
+  const { trackView } = useTrackPetView();
+  const { trackLike } = useTrackPetLike();
+  const { trackMatch } = useTrackPetMatch();
 
   const currentPet = mockPets[currentIndex];
 
   const handleSwipe = useCallback((direction: "left" | "right") => {
+    if (!currentPet) return;
+    
     setSwipeDirection(direction);
     
     if (direction === "right") {
+      // Track like
+      trackLike(currentPet.id);
+      
       if (Math.random() > 0.7) {
         setMatchedPets([...matchedPets, currentPet.id]);
+        // Track match
+        trackMatch(currentPet.id);
         setTimeout(() => setShowMatch(true), 400);
       }
     }
@@ -30,7 +45,7 @@ const Match = () => {
       setSwipeDirection(null);
       setCurrentIndex((prev) => Math.min(prev + 1, mockPets.length));
     }, 400);
-  }, [currentIndex, matchedPets, currentPet]);
+  }, [currentIndex, matchedPets, currentPet, trackLike, trackMatch]);
 
   const handleUndo = useCallback(() => {
     if (currentIndex > 0) {
@@ -39,14 +54,19 @@ const Match = () => {
   }, [currentIndex]);
 
   const handleSuperLike = useCallback(() => {
+    if (!currentPet) return;
+    
     setMatchedPets([...matchedPets, currentPet.id]);
     setSwipeDirection("right");
+    // Track both like and match for super like
+    trackLike(currentPet.id);
+    trackMatch(currentPet.id);
     setTimeout(() => {
       setShowMatch(true);
       setSwipeDirection(null);
       setCurrentIndex((prev) => Math.min(prev + 1, mockPets.length));
     }, 400);
-  }, [currentIndex, matchedPets, currentPet]);
+  }, [currentIndex, matchedPets, currentPet, trackLike, trackMatch]);
 
   if (currentIndex >= mockPets.length) {
     return (
@@ -121,6 +141,45 @@ const Match = () => {
           <div className="lg:col-span-1 flex flex-col items-center">
             <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Find Your Pet's New Friend</h2>
             
+            {/* Trending Pets Section */}
+            {!isTrendingLoading && trendingPets && trendingPets.length > 0 && (
+              <Card className="w-full max-w-sm mb-6 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-5 h-5 text-coral" />
+                  <h3 className="font-bold text-foreground">Trending Now</h3>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                  {trendingPets.map((pet) => (
+                    <button
+                      key={pet.id}
+                      onClick={() => trackView(pet.id)}
+                      className="flex-shrink-0 group cursor-pointer"
+                    >
+                      <div className="relative">
+                        <Avatar className="w-16 h-16 ring-2 ring-coral/30 group-hover:ring-coral transition-all">
+                          <AvatarImage src={pet.image} alt={pet.name} className="object-cover" />
+                          <AvatarFallback>{pet.name[0]}</AvatarFallback>
+                        </Avatar>
+                        {getTrendingBadge(pet.trendingScore) && (
+                          <div className="absolute -top-1 -right-1 bg-gradient-to-r from-coral to-peach rounded-full p-1">
+                            <Flame className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs font-medium text-foreground mt-1 text-center w-16 truncate">
+                        {pet.name}
+                      </p>
+                      {getTrendingBadge(pet.trendingScore) && (
+                        <p className="text-[10px] text-coral font-bold text-center">
+                          {getTrendingBadge(pet.trendingScore)}
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
+            
             {/* Card Stack */}
             <div className="relative h-[520px] w-full max-w-sm mb-6">
               {mockPets.slice(currentIndex + 1, currentIndex + 3).reverse().map((pet, i) => (
@@ -138,11 +197,13 @@ const Match = () => {
               ))}
               
               <div className="absolute inset-0 flex justify-center" style={{ zIndex: 20 }}>
-                <PetCard
-                  {...currentPet}
-                  isSwipingRight={swipeDirection === "right"}
-                  isSwipingLeft={swipeDirection === "left"}
-                />
+                {currentPet && (
+                  <PetCard
+                    {...currentPet}
+                    isSwipingRight={swipeDirection === "right"}
+                    isSwipingLeft={swipeDirection === "left"}
+                  />
+                )}
               </div>
             </div>
 
@@ -201,7 +262,7 @@ const Match = () => {
               It's a Match!
             </h2>
             <p className="text-muted-foreground mb-6">
-              You and {currentPet.name} liked each other! Start a conversation now.
+              You and {currentPet?.name} liked each other! Start a conversation now.
             </p>
             <div className="flex gap-3">
               <Button
