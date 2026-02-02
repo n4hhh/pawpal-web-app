@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -5,10 +6,76 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockPets } from "@/data/mockData";
 import { Settings, Edit3, Grid3X3, Heart, MapPin, Calendar, Camera, Star, Award } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 
-const myPet = mockPets[0];
+interface UserProfile {
+  id: string;
+  email: string;
+  username: string;
+  display_name: string;
+  bio: string | null;
+  avatar: string | null;
+}
 
 const Profile = () => {
+  const { user, loading: userLoading } = useAuth();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchUserProfile() {
+      if (!user?.id) {
+        console.log('No user ID available yet');
+        return;
+      }
+
+      setLoading(true);
+      console.log('Fetching profile for user:', user.id);
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, avatar_url, bio')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error.message);
+          setUserProfile(null);
+        } else {
+          console.log('Profile fetched successfully:', data);
+          // Map profiles columns to expected format
+          setUserProfile({
+            id: data.id,
+            email: data.email,
+            username: data.email?.split('@')[0] || 'user',
+            display_name: data.full_name || data.email?.split('@')[0] || 'User',
+            avatar: data.avatar_url,
+            bio: data.bio
+          });
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (!userLoading) {
+      fetchUserProfile();
+    }
+  }, [user?.id, userLoading]);
+
+  const myPet = userProfile || {
+    name: 'Loading...',
+    owner: 'user',
+    image: mockPets[0].image,
+    bio: 'Loading profile...',
+    breed: '-',
+    age: '-',
+    location: '-'
+  };
   return (
     <Layout>
       <div className="container mx-auto px-4 lg:px-8 py-8">
@@ -19,16 +86,16 @@ const Profile = () => {
               {/* Avatar */}
               <div className="relative inline-block mb-4">
                 <Avatar className="w-32 h-32 ring-4 ring-primary/20">
-                  <AvatarImage src={myPet.image} alt={myPet.name} />
-                  <AvatarFallback className="text-3xl">{myPet.name[0]}</AvatarFallback>
+                  <AvatarImage src={userProfile?.avatar || mockPets[0].image} alt={userProfile?.display_name} />
+                  <AvatarFallback className="text-3xl">{userProfile?.display_name?.[0] || 'U'}</AvatarFallback>
                 </Avatar>
                 <button className="absolute bottom-0 right-0 w-10 h-10 rounded-full gradient-coral flex items-center justify-center shadow-soft">
                   <Camera className="w-5 h-5 text-primary-foreground" />
                 </button>
               </div>
 
-              <h2 className="text-2xl font-extrabold text-foreground">{myPet.name}</h2>
-              <p className="text-muted-foreground mb-4">@{myPet.owner}</p>
+              <h2 className="text-2xl font-extrabold text-foreground">{userProfile?.display_name || 'User'}</h2>
+              <p className="text-muted-foreground mb-4">@{userProfile?.username || 'username'}</p>
 
               {/* Stats */}
               <div className="flex justify-center gap-8 mb-6">
@@ -60,27 +127,15 @@ const Profile = () => {
 
             {/* Pet Info Card */}
             <Card className="p-5 mt-6">
-              <h3 className="font-bold text-foreground mb-4">About {myPet.name}</h3>
-              <p className="text-sm text-muted-foreground mb-4">{myPet.bio}</p>
+              <h3 className="font-bold text-foreground mb-4">About {userProfile?.display_name || 'User'}</h3>
+              <p className="text-sm text-muted-foreground mb-4">{userProfile?.bio || 'No bio yet'}</p>
 
               <div className="space-y-3">
                 <div className="flex items-center gap-3 text-sm">
                   <div className="w-9 h-9 rounded-full bg-coral-light flex items-center justify-center">
                     <Heart className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="text-muted-foreground">{myPet.breed}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-9 h-9 rounded-full bg-mint-light flex items-center justify-center">
-                    <Calendar className="w-4 h-4 text-accent" />
-                  </div>
-                  <span className="text-muted-foreground">{myPet.age}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <span className="text-muted-foreground">{myPet.location}</span>
+                  <span className="text-muted-foreground">{userProfile?.email || '-'}</span>
                 </div>
               </div>
             </Card>
