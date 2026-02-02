@@ -1,63 +1,53 @@
-// Shopping cart utilities using localStorage
-
 export interface CartItem {
   id: string;
   title: string;
   price: number;
+  image: string;
   quantity: number;
-  image?: string;
 }
 
-const CART_KEY = 'pawpal_cart';
+const CART_KEY = 'pawpal-cart';
 
 export function getCart(): CartItem[] {
   try {
-    const cart = localStorage.getItem(CART_KEY);
-    return cart ? JSON.parse(cart) : [];
-  } catch (error) {
-    console.error('Error reading cart:', error);
+    const raw = localStorage.getItem(CART_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
     return [];
   }
 }
 
-export function saveCart(cart: CartItem[]): void {
-  try {
-    localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  } catch (error) {
-    console.error('Error saving cart:', error);
-  }
+function saveCart(items: CartItem[]): CartItem[] {
+  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  return items;
 }
 
-export function addToCart(item: Omit<CartItem, 'quantity'>, quantity = 1): void {
-  const cart = getCart();
-  const existingItem = cart.find((i) => i.id === item.id);
-
-  if (existingItem) {
-    existingItem.quantity += quantity;
+export function addToCart(item: Omit<CartItem, 'quantity'>, qty = 1): CartItem[] {
+  const current = getCart();
+  const existing = current.find((it) => it.id === item.id);
+  
+  if (existing) {
+    existing.quantity += qty;
   } else {
-    cart.push({ ...item, quantity });
+    current.push({ ...item, quantity: qty });
   }
-
-  saveCart(cart);
+  
+  return saveCart(current);
 }
 
-export function updateQty(itemId: string, quantity: number): void {
-  const cart = getCart();
-  const item = cart.find((i) => i.id === itemId);
-
+export function updateQty(id: string, qty: number): CartItem[] {
+  const current = getCart();
+  
+  if (qty <= 0) {
+    return saveCart(current.filter((it) => it.id !== id));
+  }
+  
+  const item = current.find((it) => it.id === id);
   if (item) {
-    if (quantity <= 0) {
-      removeFromCart(itemId);
-    } else {
-      item.quantity = quantity;
-      saveCart(cart);
-    }
+    item.quantity = qty;
   }
-}
-
-export function removeFromCart(itemId: string): void {
-  const cart = getCart().filter((i) => i.id !== itemId);
-  saveCart(cart);
+  
+  return saveCart(current);
 }
 
 export function clearCart(): void {
@@ -65,9 +55,5 @@ export function clearCart(): void {
 }
 
 export function cartTotal(items: CartItem[]): number {
-  return items.reduce((total, item) => total + item.price * item.quantity, 0);
-}
-
-export function getCartItemCount(): number {
-  return getCart().reduce((count, item) => count + item.quantity, 0);
+  return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 }
